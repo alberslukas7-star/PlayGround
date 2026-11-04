@@ -20,11 +20,15 @@
 ## 🎮 Neon Surge
 
 A self-contained 2D arena survival game with no final wave. Survive escalating
-waves forever, chain kills for score multipliers, and grab **+HP** / **OVERDRIVE**
-drops. Your ship auto-fires at the nearest threat — focus on movement, positioning,
-and dashing. Losing all hull HP does not end the run: the ship reboots in place,
-clears the area, and costs 20% of the current score.
+waves forever, chain kills for score multipliers, and grab **+HP** and random
+powerup drops. Your ship auto-fires at the nearest threat — focus on movement, positioning,
+and dashing. Powerful pickups also spawn at random: **AEGIS** (invincibility),
+**TRIPLE** shot, **NOVA** blast, and **OVERDRIVE**. You cannot die: hitting zero
+hull triggers a free emergency Aegis surge that clears the area and keeps the run
+going forever. **Every 5 kills** the game pauses for an upgrade draft: pick one of
+three permanent boosts (damage, fire rate, extra projectiles, speed, hull, dash,
+piercing rounds, lifesteal, or longer powerups). Upgrades stack for the whole run.
 
-- **Desktop:** WASD / arrows to move, **Space** to dash (with brief invulnerability), **P/Esc** to pause, **M** to mute, **Enter** to start/retry.
+- **Desktop:** WASD / arrows to move, **Space** to dash (with brief invulnerability), **P/Esc** to pause, **M** to mute, **Enter** to start, **1/2/3** to pick an upgrade.
 - **Mobile:** left thumb stick to move, **DASH** button to burst; controls respect safe areas.
 - No build step, no dependencies: `index.html`, `style.css`, and `game.js` served statically.
