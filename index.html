@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#171033" />
+  <meta name="description" content="Fort Artillery — a turn-based artillery duel with destructible terrain and Fortnite-style building." />
+  <title>Fort Artillery — Build. Blast. Survive.</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23171033'/%3E%3Cpath d='M10 46h44v8H10z' fill='%2379e04b'/%3E%3Cpath d='M18 12h28v22H18z' fill='%23ffd166'/%3E%3Ccircle cx='32' cy='23' r='7' fill='%23ff6b5e'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <div id="app">
+    <canvas id="game" aria-label="Fort Artillery battlefield"></canvas>
+
+    <div id="hud" class="hud is-hidden" aria-live="polite">
+      <header class="topbar">
+        <section class="team-card team-you" aria-label="Your squad">
+          <div class="team-heading">
+            <span class="team-dot"></span>
+            <span class="team-name">YOUR SQUAD</span>
+            <span class="mats-pill" id="youMats"><i class="wood-icon"></i><b>120</b></span>
+          </div>
+          <div class="team-worms" id="youWorms"></div>
+        </section>
+
+        <section class="turn-panel">
+          <div class="turn-label" id="turnLabel">YOUR TURN</div>
+          <div class="turn-meta">
+            <div class="wind-pill" id="windPill" title="Wind pushes shots sideways">
+              <span class="wind-arrow" id="windArrow">→</span>
+              <span id="windText">0</span>
+            </div>
+            <div class="timer-pill" id="timerPill">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              <span id="timerText">45</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="team-card team-enemy" aria-label="Rival squad">
+          <div class="team-heading">
+            <span class="mats-pill" id="enemyMats"><i class="wood-icon"></i><b>120</b></span>
+            <span class="team-name">RIVALS</span>
+            <span class="team-dot"></span>
+          </div>
+          <div class="team-worms enemy" id="enemyWorms"></div>
+        </section>
+      </header>
+
+      <div id="banner" class="banner" role="status"></div>
+
+      <div id="targetChip" class="target-chip is-hidden">
+        <span class="target-arrow" id="targetArrow">→</span>
+        <span id="targetText">RIVAL OFFSCREEN</span>
+      </div>
+
+      <footer class="dock">
+        <div class="dock-top">
+          <div class="weapon-bar" id="weaponBar" role="group" aria-label="Weapons"></div>
+          <button class="build-toggle" id="buildToggle" aria-label="Toggle build mode" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 4l9 7v9H3z"/><path d="M9 20v-6h6v6"/></svg>
+            <span>BUILD</span><kbd>B</kbd>
+          </button>
+        </div>
+
+        <div class="build-palette" id="buildPalette" aria-hidden="true">
+          <span class="palette-label">QUICK BUILD</span>
+          <button class="build-chip" data-build="wall"><span class="piece-icon wall"></span>WALL <b>20</b></button>
+          <button class="build-chip" data-build="floor"><span class="piece-icon floor"></span>FLOOR <b>15</b></button>
+          <button class="build-chip" data-build="ramp"><span class="piece-icon ramp"></span>RAMP <b>25</b></button>
+          <span class="palette-note">Tap the map to place · 4 per turn</span>
+        </div>
+
+        <div class="dock-controls">
+          <div class="control-group move-group" aria-label="Movement">
+            <button class="pad-btn" id="moveLeft" aria-label="Move left">◀</button>
+            <button class="pad-btn" id="moveRight" aria-label="Move right">▶</button>
+            <button class="pad-btn jump-btn" id="jumpBtn" aria-label="Jump">JUMP</button>
+          </div>
+
+          <div class="control-group aim-group" aria-label="Aim">
+            <button class="pad-btn small" id="aimUp" aria-label="Aim up">▲</button>
+            <button class="pad-btn small" id="aimDown" aria-label="Aim down">▼</button>
+          </div>
+
+          <div class="power-group">
+            <div class="power-head"><span>POWER</span><b id="powerValue">60%</b></div>
+            <input id="powerSlider" type="range" min="5" max="100" step="1" value="60" aria-label="Shot power" />
+          </div>
+
+          <button class="fire-btn" id="fireBtn" aria-label="Fire weapon">
+            <span class="fire-ring"></span>
+            <span class="fire-label">FIRE!</span>
+          </button>
+        </div>
+
+        <div class="dock-hints">
+          <span><kbd>A</kbd><kbd>D</kbd> move</span>
+          <span><kbd>↑</kbd><kbd>↓</kbd> aim</span>
+          <span><kbd>SPACE</kbd> jump</span>
+          <span><kbd>ENTER</kbd> fire</span>
+          <span><kbd>B</kbd> build</span>
+          <span class="hint-drag">Drag on the map to aim &amp; fire</span>
+        </div>
+      </footer>
+    </div>
+
+    <button id="soundBtn" class="sound-btn is-hidden" aria-label="Toggle sound" title="Toggle sound">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="sound-wave" d="M16 8.5a5 5 0 0 1 0 7"/><path class="sound-wave" d="M18.5 6a8.5 8.5 0 0 1 0 12"/></svg>
+    </button>
+
+    <div id="startScreen" class="screen start-screen">
+      <div class="start-glow"></div>
+      <div class="start-inner">
+        <div class="logo-lockup">
+          <div class="logo-kicker">2D SIEGE ROYALE</div>
+          <h1 class="logo">
+            <span class="logo-fort">FORT</span>
+            <span class="logo-art">ARTILLERY</span>
+          </h1>
+          <div class="logo-tag">BUILD. &nbsp;BLAST. &nbsp;SURVIVE.</div>
+        </div>
+
+        <p class="start-copy">
+          A turn-based artillery duel on a battlefield you can blow apart — then build right back up.
+          Bank shots off the wind. Fortify your worm. Loot the llamas.
+        </p>
+
+        <div class="feature-chips" aria-hidden="true">
+          <span>💥 Destructible terrain</span>
+          <span>🧱 3 build pieces</span>
+          <span>🌬️ Shifting wind</span>
+          <span>🦙 Loot llamas</span>
+        </div>
+
+        <button id="playBtn" class="play-btn" aria-label="Play">
+          <span class="play-sheen"></span>
+          <span class="play-text">PLAY</span>
+          <span class="play-sub">2 v 2 ARTILLERY</span>
+        </button>
+
+        <div class="start-controls">
+          <div><b>MOVE</b><span>A / D</span></div>
+          <div><b>AIM</b><span>↑ / ↓ or drag</span></div>
+          <div><b>FIRE</b><span>Enter or release drag</span></div>
+          <div><b>BUILD</b><span>B, then tap the map</span></div>
+        </div>
+        <div class="start-foot">Tips: walls stop rockets. Rams let you climb. Shoot llamas for extra materials.</div>
+      </div>
+      <div class="start-credit">A 2D Fortnite × Worms mashup · built with canvas</div>
+    </div>
+
+    <div id="gameOver" class="screen result-screen is-hidden" aria-live="assertive">
+      <div class="result-card">
+        <div class="result-kicker" id="resultKicker">MATCH COMPLETE</div>
+        <h2 id="resultTitle">VICTORY ROYALE</h2>
+        <p id="resultCopy">Your squad out-built and out-blasted the rivals.</p>
+        <div class="result-stats" id="resultStats"></div>
+        <button id="againBtn" class="play-btn small-play">
+          <span class="play-sheen"></span>
+          <span class="play-text">PLAY AGAIN</span>
+        </button>
+        <div class="start-foot">New battlefield. New wind. Same llamas.</div>
+      </div>
+    </div>
+
+    <div id="rotateHint" class="rotate-hint is-hidden">
+      <div class="rotate-icon">⟳</div>
+      <b>Rotate for a wider battlefield</b>
+      <span>The game works in portrait too.</span>
+      <button id="dismissRotate">PLAY PORTRAIT</button>
+    </div>
+  </div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
