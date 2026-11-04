@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#08070a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>THE DOOR — 50 guests</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23100d0b'/%3E%3Crect x='8' y='5' width='16' height='23' fill='%235a2f1b' stroke='%23f2e4c4' stroke-width='2'/%3E%3Ccircle cx='20' cy='17' r='1.6' fill='%23f2e4c4'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app">
+    <canvas id="scene" aria-label="The Door game view"></canvas>
+
+    <div id="fx" aria-hidden="true">
+      <div id="scanlines"></div>
+      <div id="vignette"></div>
+      <div id="grain"></div>
+      <div id="flash"></div>
+      <div id="static"></div>
+    </div>
+
+    <div id="peephole-mask" aria-hidden="true">
+      <div id="peephole-ring"></div>
+      <div id="peephole-glass"></div>
+      <div id="peephole-scratch"></div>
+    </div>
+
+    <div id="hud" class="hud" aria-live="polite">
+      <div id="guest-note" class="paper-note">
+        <div class="note-tape"></div>
+        <div class="guest-label">GUESTS</div>
+        <div class="guest-count"><span id="guest-count">0</span><span class="guest-slash">/</span><span class="guest-goal">50</span></div>
+        <div class="guest-bar"><div id="guest-bar-fill"></div></div>
+        <div id="guest-sub" class="guest-sub">let the humans in</div>
+      </div>
+
+      <div id="objective" class="sticky-note">
+        <div class="objective-label">TONIGHT</div>
+        <div id="objective-text">be normal</div>
+      </div>
+
+      <div id="clock-note" class="paper-note small">
+        <div class="note-tape"></div>
+        <div id="clock">8:14 PM</div>
+        <div id="door-status" class="door-status">DOOR: CLOSED</div>
+      </div>
+
+      <button id="mute" class="mini-btn" type="button" aria-label="Toggle sound">SOUND: ON</button>
+    </div>
+
+    <div id="prompt" class="prompt" aria-live="polite"></div>
+    <div id="subtitle" class="subtitle" aria-live="assertive"></div>
+    <div id="toast" class="toast" aria-live="polite"></div>
+
+    <div id="title-screen" class="screen">
+      <div class="title-inner">
+        <div class="title-kicker">a normal game about a normal door</div>
+        <h1 class="game-title" data-text="THE DOOR">THE DOOR</h1>
+        <div class="title-sub">50 guests. 1 door. 1 mistake.</div>
+
+        <svg class="title-doodle" viewBox="0 0 520 190" aria-hidden="true">
+          <g fill="none" stroke="#f2e4c4" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M54 42 L158 34 L166 172 L60 178 Z" />
+            <path d="M64 50 L150 44 L156 164 L70 168 Z" stroke-width="1.6" opacity=".7"/>
+            <circle cx="137" cy="112" r="4" fill="#f2e4c4" stroke="none"/>
+            <rect x="103" y="60" width="35" height="25" rx="2" opacity=".8"/>
+            <path d="M113 72 l8 0 M117 68 l0 8" opacity=".8"/>
+            <path d="M52 181 l112 -4" stroke-width="5"/>
+            <path d="M228 154 q-12 -44 22 -48 q33 -4 28 38" />
+            <circle cx="250" cy="92" r="16" />
+            <circle cx="244" cy="89" r="2" fill="#f2e4c4" stroke="none"/>
+            <circle cx="256" cy="89" r="2" fill="#f2e4c4" stroke="none"/>
+            <path d="M243 99 q7 6 14 0" />
+            <path d="M238 110 l-16 44 M262 110 l14 44 M250 108 l0 46" />
+            <path d="M233 154 l-6 22 M251 154 l-2 22 M260 154 l7 22" />
+            <path d="M225 126 l-20 18 M276 126 l22 16" />
+          </g>
+          <g fill="none" stroke="#c3211f" stroke-width="4" stroke-linecap="round">
+            <path d="M338 172 q-18 -70 4 -108 q20 -36 44 -8 q18 24 14 116" />
+            <path d="M352 60 q-42 2 -30 46 q10 32 34 20 q22 -12 16 -42 q-4 -22 -20 -24" fill="none"/>
+            <path d="M346 88 l-2 0 M366 86 l2 1" stroke-width="6"/>
+            <circle cx="354" cy="84" r="5" fill="#c3211f" stroke="none"/>
+            <circle cx="364" cy="83" r="5" fill="#c3211f" stroke="none"/>
+            <circle cx="360" cy="74" r="3" fill="#c3211f" stroke="none"/>
+            <path d="M340 100 q14 12 30 2" stroke-width="3"/>
+            <path d="M338 122 l-24 42 M386 118 l24 46 M356 128 l0 46" />
+            <path d="M336 170 l-8 8 M378 170 l9 8" />
+            <path d="M300 62 l-10 -14 M404 52 l12 -16" opacity=".7"/>
+          </g>
+          <g fill="#f2e4c4" font-family="Bungee, sans-serif" font-size="18" transform="rotate(-7 440 92)">
+            <text x="430" y="84">50!</text>
+          </g>
+          <g fill="none" stroke="#f2e4c4" stroke-width="2" opacity=".7">
+            <path d="M60 22 l8 -10 M94 18 l2 -12 M128 20 l-5 -11" />
+          </g>
+        </svg>
+
+        <button id="start-btn" class="big-btn start-btn" type="button">START</button>
+        <div class="title-foot">
+          <span>sound on. lights off. brain off.</span>
+          <span class="title-version">v0.9.3 (unfinished)</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="letter-screen" class="screen hidden">
+      <div class="letter-paper" role="dialog" aria-modal="true" aria-label="The letter">
+        <div class="paper-tape tape-left"></div>
+        <div class="paper-tape tape-right"></div>
+        <div class="letter-head">A LETTER &nbsp;(for you)</div>
+        <div class="letter-body">
+          <p>hello. it is me. the door.</p>
+          <p>tonight is a special night. people will come. <strong>humans.</strong> they want to come inside. let them. when there are <span class="scribble">50 humans</span>, you may have a house party.</p>
+          <p class="letter-stand">STAND AT THE DOOR.</p>
+          <p>some visitors are not humans. do not let those ones in. they have little tricks. count the eyes. count the arms. look at the shadow. knock if you are not sure.</p>
+          <p>you will know. probably.</p>
+          <p class="letter-sign">— the door</p>
+          <p class="letter-ps">p.s. do not open for the tall one.</p>
+        </div>
+        <div class="letter-stamp">DOOR<br><span>APPROVED</span></div>
+        <button id="letter-ok" class="big-btn" type="button">OK. STAND AT THE DOOR.</button>
+      </div>
+    </div>
+
+    <div id="door-ui" class="door-ui hidden">
+      <div class="knock-note">
+        <div class="knock-lines" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div id="door-prompt-text">someone is at the door.</div>
+      </div>
+      <div class="door-actions">
+        <button id="peep-btn" class="big-btn" type="button">LOOK THROUGH PEEPHOLE <span class="key">SPACE</span></button>
+        <button id="open-btn" class="big-btn danger" type="button">OPEN DOOR <span class="key">E</span></button>
+      </div>
+      <div class="door-hint">opening without looking is free. and also a terrible idea.</div>
+    </div>
+
+    <div id="peep-ui" class="peep-ui hidden">
+      <div class="peep-top">
+        <div class="peep-label">PEEPHOLE</div>
+        <div id="peep-guests">GUESTS 0/50</div>
+      </div>
+
+      <div id="speech" class="speech hidden">
+        <div id="speaker" class="speaker">someone</div>
+        <div id="line" class="line">hi.</div>
+      </div>
+
+      <div class="check-note" aria-hidden="true">
+        <div class="check-title">CHECK LIST</div>
+        <div class="check-item">□ eyes</div>
+        <div class="check-item">□ arms</div>
+        <div class="check-item">□ feet / shadow</div>
+        <div class="check-item">□ height</div>
+        <div class="check-item">□ face</div>
+        <div class="check-foot">knock if unsure</div>
+      </div>
+
+      <div class="peep-controls">
+        <div class="peep-mini-row">
+          <button id="flash-btn" class="small-btn" type="button">FLASHLIGHT <span class="key">F</span></button>
+          <button id="knock-btn" class="small-btn" type="button">KNOCK <span class="key">K</span></button>
+          <button id="zoom-btn" class="small-btn" type="button">ZOOM <span class="key">Z</span></button>
+          <button id="back-btn" class="small-btn" type="button">STEP BACK <span class="key">ESC</span></button>
+        </div>
+        <div class="verdict-row">
+          <button id="accept-btn" class="big-btn accept" type="button">LET IN <span class="key">E</span></button>
+          <button id="reject-btn" class="big-btn reject" type="button">KEEP OUT <span class="key">Q</span></button>
+        </div>
+        <div class="peep-hint">drag / mouse to look · zoom to inspect · the shadow remembers.</div>
+      </div>
+    </div>
+
+    <div id="party-banner" class="party-banner hidden" aria-live="polite">
+      <div class="party-banner-top">50 HUMANS</div>
+      <div class="party-banner-main">HOUSE PARTY</div>
+      <div class="party-banner-sub">nothing bad is happening</div>
+    </div>
+
+    <div id="jumpscare" aria-hidden="true"></div>
+    <div id="killing-title" class="killing-title hidden" aria-hidden="true">KILLING<span>PARTY</span></div>
+
+    <div id="ending" class="screen hidden">
+      <div class="ending-inner">
+        <div id="ending-stamp" class="ending-stamp">DEAD</div>
+        <h2 id="ending-title">YOU LET IT IN.</h2>
+        <div id="ending-sub" class="ending-sub">everyone died. the chips were untouched.</div>
+        <div id="ending-stats" class="ending-stats"></div>
+        <div id="ending-review" class="ending-review"></div>
+        <button id="restart-btn" class="big-btn" type="button">TRY AGAIN</button>
+        <div class="ending-foot">thank you for standing at the door.</div>
+      </div>
+    </div>
+
+    <div id="mobile-controls" class="mobile-controls hidden" aria-hidden="true">
+      <div id="stick-zone" class="stick-zone">
+        <div class="stick-base"><div id="stick-knob" class="stick-knob"></div></div>
+      </div>
+      <button id="touch-use" class="touch-use" type="button">E</button>
+    </div>
+
+    <div id="look-hint" class="look-hint hidden">drag to look · wasd to walk</div>
+    <div id="orientation" class="orientation hidden">turn your phone sideways. it is better. not required.</div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
