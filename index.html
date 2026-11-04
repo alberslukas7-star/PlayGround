@@ -22,12 +22,13 @@
       <div class="wave-box">
         <span class="label">WAVE</span>
         <div id="wave" class="wave">1</div>
-        <div class="endless">∞ RUN</div>
+        <div id="upHint" class="endless">∞ · UPGRADE IN 5</div>
       </div>
       <button id="pauseBtn" class="icon-btn" aria-label="Pause game">❚❚</button>
     </div>
 
     <div id="combo" class="combo">x1.0</div>
+    <div id="buffs" class="buffs"></div>
     <div id="banner" class="banner"><div class="banner-main"></div><div class="banner-sub"></div></div>
 
     <div class="hud-bottom">
@@ -67,8 +68,8 @@
         <span class="chip">AUTO-FIRE <b>ALWAYS ON</b></span>
       </div>
       <button id="playBtn" class="cta">PLAY</button>
-      <p class="hint">Endless run — a wipeout reboots your ship and costs 20% score, never the run.</p>
-      <p class="hint">Collect <b class="c-cyan">+HP</b> and <b class="c-pink">OVERDRIVE</b> drops · M mutes · P pauses</p>
+      <p class="hint"><b class="c-gold">AEGIS</b> = unkillable · <b class="c-purple">TRIPLE</b> · <b class="c-orange">NOVA</b> · <b class="c-pink">OVERDRIVE</b> spawn randomly</p>
+      <p class="hint">Every 5 kills: choose a permanent upgrade. You can't die — zero hull triggers a free Aegis surge.</p>
       <p class="hint touch-only">Touch: left stick moves · DASH button bursts through danger</p>
     </section>
 
@@ -77,6 +78,13 @@
       <p class="tagline">The swarm is holding its breath.</p>
       <button id="resumeBtn" class="cta">RESUME</button>
       <p class="hint">Press P or ESC to continue</p>
+    </section>
+
+    <section id="upgradeScreen" class="screen">
+      <div class="brand small upgrade-title">UPGRADE</div>
+      <p class="tagline">Every 5 kills, choose a permanent boost. The run never ends.</p>
+      <div id="upgradeCards" class="upgrade-cards"></div>
+      <p class="hint">Click a card or press 1 / 2 / 3</p>
     </section>
   </div>
 </div>

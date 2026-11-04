@@ -10,6 +10,9 @@
     best: $('#best'),
     wave: $('#wave'),
     combo: $('#combo'),
+    buffs: $('#buffs'),
+    upHint: $('#upHint'),
+    upgradeCards: $('#upgradeCards'),
     hpFill: $('#hpFill'),
     hpText: $('#hpText'),
     dashFill: $('#dashFill'),
@@ -39,6 +42,25 @@
     brute: { hp: 108, r: 27, speed: 56, dmg: 24, score: 40, color: COLORS.amber },
   };
 
+  const POWERUPS = {
+    aegis: { label: 'AEGIS', color: '#ffd166' },
+    triple: { label: 'TRIPLE', color: '#b06bff' },
+    nova: { label: 'NOVA', color: '#ff7a45' },
+    od: { label: 'OVERDRIVE', color: '#ff2fb0' },
+  };
+
+  const UPGRADES = [
+    { id: 'damage', icon: '✦', name: 'OVERCHARGE', desc: '+25% bullet damage', color: '#ff7a45', max: 99, apply() { G.up.damage += 0.25; } },
+    { id: 'rate', icon: '»', name: 'RAPID CORE', desc: '+18% fire rate', color: '#4df3ff', max: 9, apply() { G.up.rate += 0.18; } },
+    { id: 'shots', icon: '⋔', name: 'SPLIT BARREL', desc: '+1 projectile per shot', color: '#b06bff', max: 4, apply() { G.up.shots += 1; } },
+    { id: 'speed', icon: '➤', name: 'THRUSTERS', desc: '+12% movement speed', color: '#3dffb0', max: 9, apply() { G.up.speed += 0.12; } },
+    { id: 'hp', icon: '✚', name: 'HULL PLATING', desc: '+25 max hull and repair', color: '#3dffb0', max: 99, apply() { G.player.maxHp += 25; G.player.hp = Math.min(G.player.maxHp, G.player.hp + 25); } },
+    { id: 'dash', icon: '↯', name: 'PHASE DRIVE', desc: '-20% dash cooldown', color: '#4df3ff', max: 5, apply() { G.up.dash = Math.max(0.25, G.up.dash * 0.8); G.player.dashCdMax = DASH_CD * G.up.dash; G.player.dashCd = Math.min(G.player.dashCd, G.player.dashCdMax); } },
+    { id: 'pierce', icon: '◎', name: 'RAIL ROUNDS', desc: 'Bullets pierce +1 enemy', color: '#ffd166', max: 3, apply() { G.up.pierce += 1; } },
+    { id: 'leech', icon: '♥', name: 'SIPHON', desc: 'Heal 2 HP per kill', color: '#ff2fb0', max: 3, apply() { G.up.leech += 1; } },
+    { id: 'power', icon: '◇', name: 'AEGIS CORE', desc: 'Powerups last 30% longer', color: '#ffd166', max: 4, apply() { G.up.powerDur += 0.3; } },
+  ];
+
   const SPEED = 315;
   const DASH_CD = 1.15;
   const BEST_KEY = 'neonSurgeBest';
@@ -50,6 +72,8 @@
   let muted = false;
   let audio = null;
   let lastSfx = 0;
+  let lastBuffKey = '';
+  let nextEnemyId = 1;
 
   const keys = new Set();
   const touch = { x: 0, y: 0 };
@@ -64,6 +88,14 @@
     combo: 1,
     comboT: 0,
     overdrive: 0,
+    invincible: 0,
+    triple: 0,
+    powerupT: 5,
+    up: null,
+    upgradeAt: 5,
+    pendingUpgrades: 0,
+    upgradeChoices: [],
+    level: 0,
     shake: 0,
     flash: 0,
     clearT: 0,
@@ -228,6 +260,14 @@
     G.combo = 1;
     G.comboT = 0;
     G.overdrive = 0;
+    G.invincible = 0;
+    G.triple = 0;
+    G.powerupT = 5;
+    G.up = { damage: 1, rate: 1, shots: 0, speed: 1, dash: 1, pierce: 0, leech: 0, powerDur: 1, stacks: {} };
+    G.upgradeAt = 5;
+    G.pendingUpgrades = 0;
+    G.upgradeChoices = [];
+    G.level = 0;
     G.shake = 0;
     G.flash = 0;
     G.clearT = 0;
@@ -251,6 +291,7 @@
       fireT: 0,
       dashT: 0,
       dashCd: 0,
+      dashCdMax: DASH_CD,
       dashDir: { x: 0, y: -1 },
       invuln: 0,
       trail: [],
@@ -344,6 +385,7 @@
     const hpMul = 1 + Math.min(12, (G.wave - 1) * 0.14);
     const spMul = Math.min(1.65, 1 + (G.wave - 1) * 0.028);
     G.enemies.push({
+      id: nextEnemyId++,
       type,
       x,
       y,
@@ -366,6 +408,46 @@
     burst(x, y, base.color, 10, 150);
     G.particles.push({ x, y, vx: 0, vy: 0, r: 26, life: 0.4, maxLife: 0.4, color: base.color, ring: true });
     if (G.enemies.length > 60) G.enemies.shift();
+  }
+
+  function spawnRandomPowerup() {
+    if (G.pickups.filter((q) => q.power).length >= 3) return;
+    const bag = ['aegis', 'triple', 'nova', 'od', 'triple', 'nova', 'od', 'aegis', 'triple'];
+    const type = bag[(Math.random() * bag.length) | 0];
+    const p = G.player;
+    let x = W / 2;
+    let y = H / 2;
+    for (let i = 0; i < 16; i++) {
+      x = rand(64, W - 64);
+      y = rand(140, H - 64);
+      if (Math.hypot(x - p.x, y - p.y) > 120) break;
+    }
+    G.pickups.push({ x, y, type, t: 0, life: 20, power: true });
+    const info = POWERUPS[type];
+    G.particles.push({ x, y, vx: 0, vy: 0, r: 18, life: 0.65, maxLife: 0.65, color: info.color, ring: true });
+    G.particles.push({ x, y, vx: 0, vy: 0, r: 4, life: 0.65, maxLife: 0.65, color: info.color, ring: true });
+    floatText(x, y - 30, info.label + ' DROP', info.color);
+    tone(520, 780, 0.18, 'sine', 0.02);
+  }
+
+  function detonateNova() {
+    const p = G.player;
+    G.shake = 34;
+    G.flash = 1.1;
+    for (let i = G.enemies.length - 1; i >= 0; i--) {
+      const e = G.enemies[i];
+      e.hp -= 400;
+      e.hitT = 0.12;
+      burst(e.x, e.y, e.color, 7, 220);
+      if (e.hp <= 0) killEnemy(i);
+    }
+    G.ebullets.length = 0;
+    G.particles.push({ x: p.x, y: p.y, vx: 0, vy: 0, r: 24, life: 0.8, maxLife: 0.8, color: '#ff7a45', ring: true });
+    G.particles.push({ x: p.x, y: p.y, vx: 0, vy: 0, r: 10, life: 0.8, maxLife: 0.8, color: '#ffd166', ring: true });
+    floatText(p.x, p.y - 40, 'NOVA SURGE', '#ff7a45');
+    showBanner('NOVA', 'AREA CLEARED');
+    tone(120, 920, 0.45, 'sawtooth', 0.05);
+    tone(920, 90, 0.55, 'sine', 0.04);
   }
 
   /* ---------------- Input ---------------- */
@@ -391,7 +473,7 @@
       : { x: Math.cos(p.angle), y: Math.sin(p.angle) };
     p.dashDir = dir;
     p.dashT = 0.16;
-    p.dashCd = DASH_CD;
+    p.dashCd = p.dashCdMax || DASH_CD;
     p.invuln = Math.max(p.invuln, 0.34);
     burst(p.x, p.y, COLORS.cyan, 12, 220);
     sfx.dash();
@@ -426,6 +508,14 @@
       ensureAudio();
       keys.add(e.code);
       if (e.repeat) return;
+      if (G.state === 'upgrade') {
+        const idx = ['Digit1', 'Digit2', 'Digit3'].indexOf(e.code);
+        if (idx >= 0 && G.upgradeChoices[idx]) {
+          e.preventDefault();
+          chooseUpgrade(G.upgradeChoices[idx]);
+        }
+        return;
+      }
       if (e.code === 'Space') tryDash();
       if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
       if (e.code === 'KeyM') toggleMute();
@@ -517,16 +607,34 @@
     els.hpFill.style.width = hpPct + '%';
     els.hpText.textContent = String(Math.ceil(p.hp));
     els.healthMeter.classList.toggle('low', hpPct < 30);
-    const dashPct = clamp(1 - p.dashCd / DASH_CD, 0, 1) * 100;
+    const dashPct = clamp(1 - p.dashCd / (p.dashCdMax || DASH_CD), 0, 1) * 100;
     els.dashFill.style.width = dashPct + '%';
 
     const scoreText = String(G.score);
     if (force || els.score.textContent !== scoreText) els.score.textContent = scoreText;
     if (force || els.wave.textContent !== String(G.wave)) els.wave.textContent = String(G.wave);
+    const upLeft = Math.max(0, G.upgradeAt - G.kills);
+    const upText = G.state === 'upgrade' || G.pendingUpgrades > 0 ? '∞ · UPGRADE READY' : '∞ · UPGRADE IN ' + upLeft;
+    if (els.upHint.textContent !== upText) els.upHint.textContent = upText;
 
     const showCombo = G.combo > 1.01 && G.comboT > 0;
     els.combo.classList.toggle('on', showCombo);
     if (showCombo) els.combo.textContent = 'x' + G.combo.toFixed(1) + ' COMBO';
+
+    updateBuffs();
+  }
+
+  function updateBuffs() {
+    const active = [];
+    if (G.invincible > 0) active.push(['AEGIS ' + Math.ceil(G.invincible) + 's', POWERUPS.aegis.color]);
+    if (G.triple > 0) active.push(['TRIPLE ' + Math.ceil(G.triple) + 's', POWERUPS.triple.color]);
+    if (G.overdrive > 0) active.push(['OVERDRIVE ' + Math.ceil(G.overdrive) + 's', POWERUPS.od.color]);
+    const key = active.map((b) => b.join('|')).join(',');
+    if (key === lastBuffKey) return;
+    lastBuffKey = key;
+    els.buffs.innerHTML = active
+      .map(([label, color]) => `<span class="buff" style="color:${color}"><i></i>${label}</span>`)
+      .join('');
   }
 
   function showBanner(main, sub) {
@@ -546,36 +654,91 @@
     els.overlay.classList.add('hidden');
   }
 
+  function openUpgrade() {
+    if (G.state !== 'playing' && G.state !== 'upgrade') return;
+    G.state = 'upgrade';
+    const pool = UPGRADES.filter((u) => (G.up.stacks[u.id] || 0) < u.max);
+    const copy = pool.slice();
+    const choices = [];
+    while (choices.length < 3 && copy.length > 0) {
+      choices.push(copy.splice((Math.random() * copy.length) | 0, 1)[0]);
+    }
+    G.upgradeChoices = choices;
+    els.upgradeCards.innerHTML = choices.map((u, i) => {
+      const stacks = G.up.stacks[u.id] || 0;
+      return `<button class="upgrade-card" type="button" data-index="${i}" style="--c:${u.color}">
+        <span class="u-key">${i + 1}</span>
+        <span class="u-icon">${u.icon}</span>
+        <span class="u-body">
+          <span class="u-name">${u.name}</span>
+          <span class="u-desc">${u.desc}</span>
+          <span class="u-level">${stacks > 0 ? 'LV ' + stacks : 'NEW'}</span>
+        </span>
+      </button>`;
+    }).join('');
+    for (const btn of els.upgradeCards.querySelectorAll('.upgrade-card')) {
+      btn.addEventListener('click', () => {
+        chooseUpgrade(G.upgradeChoices[Number(btn.dataset.index)]);
+      });
+    }
+    showScreen('upgradeScreen');
+    tone(520, 1040, 0.24, 'triangle', 0.03);
+  }
+
+  function chooseUpgrade(upgrade) {
+    if (G.state !== 'upgrade' || !upgrade) return;
+    upgrade.apply();
+    G.up.stacks[upgrade.id] = (G.up.stacks[upgrade.id] || 0) + 1;
+    G.level++;
+    G.pendingUpgrades = Math.max(0, G.pendingUpgrades - 1);
+    const p = G.player;
+    G.shake = Math.max(G.shake, 6);
+    burst(p.x, p.y, upgrade.color, 20, 240);
+    floatText(p.x, p.y - 34, upgrade.name, upgrade.color);
+    sfx.pickup();
+    tone(660, 1320, 0.2, 'sine', 0.04);
+    updateHud(true);
+    if (G.pendingUpgrades > 0) {
+      openUpgrade();
+    } else {
+      G.state = 'playing';
+      hideOverlay();
+      last = performance.now();
+    }
+  }
+
   // The run never ends: losing all hull HP triggers an in-place reboot.
   // Nearby threats are cleared, the ship returns at center with full HP and
   // a short invulnerability window, and the score takes a 20% hit.
+  // The player can never die. Hitting zero hull triggers a free emergency
+  // Aegis surge: full heal, invincibility, and the area is cleared. No score
+  // loss and no end state.
   function reboot() {
     if (G.state !== 'playing') return;
     const p = G.player;
     G.reboots++;
-    const penalty = Math.round(G.score * 0.2);
-    G.score = Math.max(0, G.score - penalty);
     G.combo = 1;
     G.comboT = 0;
 
-    // Clear the immediate area and all incoming fire so the respawn is fair.
+    // Clear the immediate area and all incoming fire so the surge is fair.
     for (let i = G.enemies.length - 1; i >= 0; i--) {
       const e = G.enemies[i];
-      if (Math.hypot(e.x - (W / 2), e.y - (H / 2)) < 320) {
+      if (Math.hypot(e.x - (W / 2), e.y - (H / 2)) < 340) {
         burst(e.x, e.y, e.color, 10, 220);
         G.enemies.splice(i, 1);
       }
     }
     G.ebullets.length = 0;
 
-    burst(p.x, p.y, COLORS.cyan, 52, 380);
-    burst(p.x, p.y, COLORS.pink, 26, 260);
+    burst(p.x, p.y, POWERUPS.aegis.color, 52, 380);
+    burst(p.x, p.y, COLORS.cyan, 26, 260);
     G.shake = 30;
-    G.flash = 0.85;
+    G.flash = 0.9;
     sfx.reboot();
 
     p.hp = p.maxHp;
-    p.invuln = 3.2;
+    p.invuln = 0.6;
+    G.invincible = Math.max(G.invincible, 6 * G.up.powerDur);
     p.x = W / 2;
     p.y = H / 2;
     p.vx = 0;
@@ -585,8 +748,8 @@
     p.fireT = 0.25;
     p.trail.length = 0;
 
-    floatText(p.x, p.y - 36, penalty > 0 ? '-' + penalty + ' SCORE' : 'SYSTEM RESTORED', COLORS.amber);
-    showBanner('REBOOT', 'THE RUN CONTINUES');
+    floatText(p.x, p.y - 36, 'AEGIS SURGE', POWERUPS.aegis.color);
+    showBanner('AEGIS SURGE', 'YOU CANNOT DIE');
     updateHud(true);
   }
 
@@ -617,6 +780,11 @@
   function damagePlayer(amount) {
     const p = G.player;
     if (!p || G.state !== 'playing' || p.invuln > 0) return;
+    if (G.invincible > 0) {
+      // Aegis mode: damage is completely ignored, with a little gold spark.
+      burst(p.x, p.y, POWERUPS.aegis.color, 4, 120);
+      return;
+    }
     p.hp = Math.max(0, p.hp - amount);
     p.invuln = 0.95;
     G.combo = 1;
@@ -638,6 +806,13 @@
     p.invuln = Math.max(0, p.invuln - dt);
     p.fireT -= dt;
     G.overdrive = Math.max(0, G.overdrive - dt);
+    G.invincible = Math.max(0, G.invincible - dt);
+    G.triple = Math.max(0, G.triple - dt);
+    G.powerupT -= dt;
+    if (G.powerupT <= 0) {
+      spawnRandomPowerup();
+      G.powerupT = rand(6.5, 10.5);
+    }
     G.comboT = Math.max(0, G.comboT - dt);
     if (G.comboT <= 0) G.combo = 1;
     G.shake = Math.max(0, G.shake - 55 * dt);
@@ -648,13 +823,13 @@
     // Movement / dash
     if (p.dashT > 0) {
       p.dashT -= dt;
-      p.x += p.dashDir.x * 1500 * dt;
-      p.y += p.dashDir.y * 1500 * dt;
+      p.x += p.dashDir.x * 1500 * G.up.speed * dt;
+      p.y += p.dashDir.y * 1500 * G.up.speed * dt;
       p.trail.push({ x: p.x, y: p.y, angle: p.angle, life: 0.3, maxLife: 0.3 });
       if (p.trail.length > 26) p.trail.shift();
     } else {
-      const tx = mv.x * SPEED;
-      const ty = mv.y * SPEED;
+      const tx = mv.x * SPEED * G.up.speed;
+      const ty = mv.y * SPEED * G.up.speed;
       p.vx += (tx - p.vx) * Math.min(1, dt * 14);
       p.vy += (ty - p.vy) * Math.min(1, dt * 14);
       p.x += p.vx * dt;
@@ -681,21 +856,29 @@
 
     // Auto fire
     if (target && p.fireT <= 0) {
-      const spread = rand(-0.03, 0.03);
-      const a = p.angle + spread;
-      const spd = 1080;
-      G.bullets.push({
-        x: p.x + Math.cos(p.angle) * 20,
-        y: p.y + Math.sin(p.angle) * 20,
-        vx: Math.cos(a) * spd,
-        vy: Math.sin(a) * spd,
-        r: 4,
-        dmg: 12,
-        life: 1.0,
-        color: G.overdrive > 0 ? '#ff8ae0' : '#9dfbff',
-      });
-      burst(p.x + Math.cos(p.angle) * 20, p.y + Math.sin(p.angle) * 20, G.overdrive > 0 ? COLORS.pink : COLORS.cyan, 2, 90);
-      p.fireT = G.overdrive > 0 ? 0.075 : 0.155;
+      const count = 1 + G.up.shots + (G.triple > 0 ? 2 : 0);
+      const step = 0.15;
+      for (let i = 0; i < count; i++) {
+        const off = (i - (count - 1) / 2) * step;
+        const spread = rand(-0.02, 0.02);
+        const a = p.angle + off + spread;
+        const spd = 1080;
+        G.bullets.push({
+          x: p.x + Math.cos(p.angle) * 20,
+          y: p.y + Math.sin(p.angle) * 20,
+          vx: Math.cos(a) * spd,
+          vy: Math.sin(a) * spd,
+          r: 4,
+          dmg: 12 * G.up.damage,
+          life: 1.0,
+          color: G.triple > 0 ? '#c99bff' : (G.overdrive > 0 ? '#ff8ae0' : '#9dfbff'),
+          pierce: G.up.pierce,
+          hitIds: [],
+        });
+      }
+      const muzzleColor = G.triple > 0 ? COLORS.purple : (G.overdrive > 0 ? COLORS.pink : COLORS.cyan);
+      burst(p.x + Math.cos(p.angle) * 20, p.y + Math.sin(p.angle) * 20, muzzleColor, 2, 90);
+      p.fireT = (G.overdrive > 0 ? 0.075 : (G.triple > 0 ? 0.125 : 0.155)) / G.up.rate;
       sfx.shoot();
     }
 
@@ -730,6 +913,8 @@
     } else {
       G.clearT = 0;
     }
+
+    if (G.pendingUpgrades > 0) openUpgrade();
 
     updateHud(false);
   }
@@ -852,11 +1037,13 @@
         G.bullets.splice(i, 1);
         continue;
       }
-      let hit = false;
+      let remove = false;
       for (let j = G.enemies.length - 1; j >= 0; j--) {
         const e = G.enemies[j];
         const rr = e.r + b.r;
         if ((e.x - b.x) ** 2 + (e.y - b.y) ** 2 < rr * rr) {
+          if (e.id !== undefined && b.hitIds.includes(e.id)) continue;
+          if (e.id !== undefined) b.hitIds.push(e.id);
           e.hp -= b.dmg;
           e.hitT = 0.09;
           e.vx += b.vx * 0.014;
@@ -864,11 +1051,12 @@
           burst(b.x, b.y, e.color, 4, 150);
           sfx.hit();
           if (e.hp <= 0) killEnemy(j);
-          hit = true;
-          break;
+          if (b.pierce > 0) b.pierce--;
+          else remove = true;
+          if (remove) break;
         }
       }
-      if (hit) G.bullets.splice(i, 1);
+      if (remove) G.bullets.splice(i, 1);
     }
   }
 
@@ -877,6 +1065,14 @@
     if (!e) return;
     G.enemies.splice(index, 1);
     G.kills++;
+    if (G.up.leech > 0) {
+      const p = G.player;
+      p.hp = Math.min(p.maxHp, p.hp + 2 * G.up.leech);
+    }
+    if (G.kills >= G.upgradeAt) {
+      G.upgradeAt += 5;
+      G.pendingUpgrades++;
+    }
     G.combo = Math.min(8, G.combo + 0.2);
     G.comboT = 2.8;
     const points = Math.round(e.score * G.combo);
@@ -929,16 +1125,36 @@
         q.x += (dx / d) * 150 * dt;
         q.y += (dy / d) * 150 * dt;
       }
-      if (d < p.r + 18) {
+      if (d < p.r + (q.power ? 22 : 18)) {
         if (q.type === 'hp') {
           p.hp = Math.min(p.maxHp, p.hp + 25);
           floatText(q.x, q.y, '+25 HP', COLORS.green);
           burst(q.x, q.y, COLORS.green, 14, 180);
           sfx.pickup();
+        } else if (q.type === 'aegis') {
+          const dur = 12 * G.up.powerDur;
+          G.invincible = Math.max(G.invincible, dur);
+          floatText(q.x, q.y, 'YOU CANNOT DIE', POWERUPS.aegis.color);
+          burst(q.x, q.y, POWERUPS.aegis.color, 30, 280);
+          G.particles.push({ x: q.x, y: q.y, vx: 0, vy: 0, r: 16, life: 0.7, maxLife: 0.7, color: POWERUPS.aegis.color, ring: true });
+          showBanner('AEGIS', 'YOU CANNOT DIE');
+          sfx.pickup();
+          tone(440, 1320, 0.3, 'triangle', 0.045);
+          tone(660, 1980, 0.35, 'sine', 0.03);
+        } else if (q.type === 'triple') {
+          G.triple = Math.max(G.triple, 12 * G.up.powerDur);
+          floatText(q.x, q.y, 'TRIPLE SHOT', POWERUPS.triple.color);
+          burst(q.x, q.y, POWERUPS.triple.color, 22, 240);
+          showBanner('TRIPLE SHOT', '3X FIREPOWER');
+          sfx.pickup();
+          tone(520, 1560, 0.26, 'sine', 0.04);
+        } else if (q.type === 'nova') {
+          detonateNova();
         } else {
-          G.overdrive = 6;
-          floatText(q.x, q.y, 'OVERDRIVE', COLORS.pink);
-          burst(q.x, q.y, COLORS.pink, 18, 220);
+          G.overdrive = Math.max(G.overdrive, 8 * G.up.powerDur);
+          floatText(q.x, q.y, 'OVERDRIVE', POWERUPS.od.color);
+          burst(q.x, q.y, POWERUPS.od.color, 18, 220);
+          showBanner('OVERDRIVE', 'RAPID FIRE');
           sfx.pickup();
           tone(520, 1560, 0.22, 'sine', 0.04);
         }
@@ -982,30 +1198,86 @@
 
   function drawPickups(t) {
     for (const q of G.pickups) {
-      const color = q.type === 'hp' ? COLORS.green : COLORS.pink;
-      const pulse = 1 + Math.sin(q.t * 5) * 0.12;
+      const power = Boolean(q.power);
+      const info = POWERUPS[q.type];
+      const color = q.type === 'hp' ? COLORS.green : (info ? info.color : COLORS.pink);
+      const R = power ? 17 : 14;
+      const pulse = 1 + Math.sin(q.t * 5) * (power ? 0.1 : 0.12);
       const alpha = q.life < 3 ? (Math.sin(q.t * 14) * 0.35 + 0.65) : 1;
       ctx.save();
       ctx.translate(q.x, q.y);
       ctx.scale(pulse, pulse);
       ctx.globalAlpha = alpha;
       ctx.shadowColor = color;
-      ctx.shadowBlur = 20;
+      ctx.shadowBlur = power ? 26 : 20;
       ctx.strokeStyle = color;
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = power ? 2 : 1.5;
       ctx.beginPath();
-      ctx.arc(0, 0, 14, 0, Math.PI * 2);
+      ctx.arc(0, 0, R, 0, Math.PI * 2);
       ctx.stroke();
       ctx.globalAlpha = alpha * 0.2;
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.arc(0, 0, 14, 0, Math.PI * 2);
+      ctx.arc(0, 0, R, 0, Math.PI * 2);
       ctx.fill();
       ctx.globalAlpha = alpha;
+
+      if (power) {
+        ctx.save();
+        ctx.rotate(t * 0.8);
+        ctx.setLineDash([4, 6]);
+        ctx.globalAlpha = alpha * 0.65;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(0, 0, R + 7, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+
+      ctx.save();
+      if (power) ctx.rotate(t * 1.4);
       ctx.fillStyle = '#ffffff';
       if (q.type === 'hp') {
         ctx.fillRect(-5, -1.6, 10, 3.2);
         ctx.fillRect(-1.6, -5, 3.2, 10);
+      } else if (q.type === 'aegis') {
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(0, -9);
+        ctx.lineTo(8, -5);
+        ctx.lineTo(8, 0);
+        ctx.quadraticCurveTo(8, 7, 0, 10);
+        ctx.quadraticCurveTo(-8, 7, -8, 0);
+        ctx.lineTo(-8, -5);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, -3);
+        ctx.lineTo(0, 5);
+        ctx.moveTo(-4, 1);
+        ctx.lineTo(4, 1);
+        ctx.stroke();
+      } else if (q.type === 'triple') {
+        ctx.beginPath();
+        ctx.arc(-6, 4, 2.6, 0, Math.PI * 2);
+        ctx.arc(0, -5, 2.6, 0, Math.PI * 2);
+        ctx.arc(6, 4, 2.6, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (q.type === 'nova') {
+        ctx.beginPath();
+        ctx.moveTo(0, -10);
+        ctx.lineTo(2.7, -2.7);
+        ctx.lineTo(10, 0);
+        ctx.lineTo(2.7, 2.7);
+        ctx.lineTo(0, 10);
+        ctx.lineTo(-2.7, 2.7);
+        ctx.lineTo(-10, 0);
+        ctx.lineTo(-2.7, -2.7);
+        ctx.closePath();
+        ctx.fill();
       } else {
         ctx.beginPath();
         ctx.moveTo(2, -8);
@@ -1016,6 +1288,16 @@
         ctx.lineTo(0, -1);
         ctx.closePath();
         ctx.fill();
+      }
+      ctx.restore();
+
+      if (power && info) {
+        ctx.font = '700 8px ui-monospace, Menlo, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = color;
+        ctx.globalAlpha = alpha * 0.9;
+        ctx.fillText(info.label, 0, R + 17);
+        ctx.textAlign = 'left';
       }
       ctx.restore();
     }
@@ -1168,6 +1450,48 @@
       ctx.lineTo(-10, 9);
       ctx.closePath();
       ctx.fill();
+      ctx.restore();
+    }
+
+    if (G.invincible > 0) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      const gold = POWERUPS.aegis.color;
+      const pulse = 0.16 + Math.sin(t * 6) * 0.05;
+      ctx.globalAlpha = pulse;
+      ctx.fillStyle = gold;
+      ctx.beginPath();
+      ctx.arc(0, 0, 34, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 0.85;
+      ctx.strokeStyle = gold;
+      ctx.lineWidth = 2;
+      ctx.rotate(t * 1.2);
+      ctx.setLineDash([9, 7]);
+      ctx.beginPath();
+      ctx.arc(0, 0, 28, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 0.5;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(0, 0, 23, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    if (G.triple > 0) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.fillStyle = POWERUPS.triple.color;
+      ctx.shadowColor = POWERUPS.triple.color;
+      ctx.shadowBlur = 10;
+      for (let i = 0; i < 3; i++) {
+        const a = t * 2.4 + (i / 3) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.arc(Math.cos(a) * 25, Math.sin(a) * 25, 2.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.restore();
     }
 
