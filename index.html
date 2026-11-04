@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0b0808">
+<title>50 HUMANS — a very bad horror game</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 fill=%22%230b0808%22/%3E%3Crect x=%2214%22 y=%228%22 width=%2236%22 height=%2248%22 fill=%22%235e3321%22 stroke=%22%23f1dfb7%22 stroke-width=%222%22/%3E%3Ccircle cx=%2242%22 cy=%2234%22 r=%223%22 fill=%22%23ffd86b%22/%3E%3C/svg%3E">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="game" aria-label="First person view of your house"></canvas>
+
+  <div id="vhs" aria-hidden="true"></div>
+  <div id="flash" aria-hidden="true"></div>
+
+  <div id="hud">
+    <div id="topbar">
+      <div id="objective-wrap">
+        <span class="small-label">TONIGHT'S PLAN</span>
+        <div id="objective">Enjoy your quiet night.</div>
+        <div id="counter"><span class="face-ico">☺</span> HUMANS INSIDE <b id="humans">0</b><span class="slash">/</span><span id="target">50</span></div>
+      </div>
+      <div id="topright">
+        <button id="mute" class="chip" title="Toggle sound" aria-label="Toggle sound">SOUND: ON</button>
+        <button id="helpBtn" class="chip" title="How to play" aria-label="How to play">?</button>
+      </div>
+    </div>
+
+    <div id="crosshair" aria-hidden="true"><i></i></div>
+    <div id="compass" class="hidden" aria-hidden="true"><span class="arrow">▲</span><small id="compassLabel">DOOR</small></div>
+    <div id="caption" class="hidden"></div>
+    <div id="prompt" class="hidden"></div>
+    <div id="toast" class="hidden"></div>
+
+    <div id="hintbar">
+      <span class="desk-hint">WASD / arrows move &nbsp;·&nbsp; drag to look &nbsp;·&nbsp; E interact &nbsp;·&nbsp; F open door</span>
+      <span class="touch-hint">left thumb move &nbsp;·&nbsp; right thumb look &nbsp;·&nbsp; tap the buttons</span>
+    </div>
+  </div>
+
+  <div id="partyBanner" class="hidden" aria-live="polite">
+    <span>HOUSE PARTY</span>
+    <small>50 HUMANS &nbsp;·&nbsp; 0 REGRETS</small>
+  </div>
+  <div id="confetti" aria-hidden="true"></div>
+
+  <!-- TITLE -->
+  <section id="title" class="screen">
+    <div class="title-static" aria-hidden="true"></div>
+    <div class="title-inner">
+      <div class="vhs-tag"><i></i> VHS &nbsp;·&nbsp; SP &nbsp;·&nbsp; 00:00:00</div>
+      <p class="eyebrow">from the studio that brought you absolutely nothing</p>
+      <h1>50<span>HUMANS</span></h1>
+      <p class="tagline">a very bad horror game about<br>answering the door.</p>
+      <div class="warn">⚠ CONTAINS JUMPSCARES + LOUD NOISES ⚠</div>
+      <button id="startBtn" class="big-btn">▶ START THE NIGHT</button>
+      <button id="titleHelpBtn" class="link-btn">how to play</button>
+      <p class="tiny">headphones recommended &nbsp;·&nbsp; manners mandatory</p>
+    </div>
+    <div class="title-footer">v0.0.1 &nbsp;·&nbsp; NOT RATED &nbsp;·&nbsp; PROBABLY FINE</div>
+  </section>
+
+  <!-- HELP -->
+  <section id="help" class="screen hidden">
+    <div class="help-card">
+      <div class="kicker">THE RULES</div>
+      <h2>DOOR<br>SCHOOL</h2>
+      <p>You are hosting a party for <b>50 humans</b>. They will knock. Some of them will not be humans.</p>
+      <div class="help-grid">
+        <div><b>MOVE</b><span>WASD / arrow keys<br>or the left thumbstick</span></div>
+        <div><b>LOOK</b><span>drag anywhere<br>or drag the right side</span></div>
+        <div><b>INTERACT</b><span>E / tap the prompt<br>read letters, use peephole</span></div>
+        <div><b>OPEN DOOR</b><span>F / tap the prompt<br>warning: opening is permanent</span></div>
+      </div>
+      <p class="help-warning">If they are human, let them in. If they are <em>not</em> human, keep the door closed.<br>Do not let the anomaly in.</p>
+      <button id="helpClose" class="big-btn dark">GOT IT.</button>
+    </div>
+  </section>
+
+  <!-- LETTER -->
+  <section id="letterModal" class="modal hidden">
+    <article class="paper">
+      <div class="paper-top">
+        <span>FROM THE DESK OF THE NEIGHBORHOOD PARTY COMMITTEE</span>
+        <span>NO. 50</span>
+      </div>
+      <h2>DEAR HOMEOWNER,</h2>
+      <p class="hand">IT IS PARTY NIGHT.</p>
+      <ol class="rules">
+        <li><b>STAND AT THE DOOR.</b> Do not wander off. There is a schedule.</li>
+        <li>When someone knocks, <b>LOOK THROUGH THE PEEPHOLE.</b></li>
+        <li>If they are <b>HUMAN</b>, let them in. We need <b>50 HUMANS</b> for the house party.</li>
+        <li>If they are <b>NOT HUMAN</b>, <b>KEEP THE DOOR CLOSED.</b> Do not let the anomaly in.</li>
+      </ol>
+      <p class="hand small">They will bring snacks. You will bring the house.</p>
+      <p class="signature">— The Neighborhood Party Committee</p>
+      <p class="ps">P.S. We forgot whose birthday it is. Bring ice. P.P.S. Do not let the anomaly in.</p>
+      <div class="paper-doodle" aria-hidden="true">☺</div>
+      <button id="closeLetter" class="big-btn dark">OKAY.</button>
+    </article>
+  </section>
+
+  <!-- PEEPHOLE -->
+  <section id="peephole" class="screen peephole hidden">
+    <div class="p-top"><span>PEEPHOLE™</span><small>• LOOK CLOSELY •</small></div>
+    <div class="p-lens">
+      <canvas id="peepCanvas" width="512" height="512" aria-label="View through the peephole"></canvas>
+      <div class="p-glass" aria-hidden="true"></div>
+      <div class="p-glitch" aria-hidden="true"></div>
+    </div>
+    <div class="p-controls">
+      <button id="letInBtn" class="big-btn green">LET THEM IN <span class="key">F</span></button>
+      <button id="closeDoorBtn" class="big-btn red">KEEP IT CLOSED <span class="key">C</span></button>
+    </div>
+    <button id="stepBackBtn" class="link-btn">step back from the door <span class="key">ESC</span></button>
+    <p class="p-hint" id="peepHint">Humans have 2 eyes, 2 arms, 1 head, and a reason to knock. Usually.</p>
+  </section>
+
+  <!-- DEATH -->
+  <section id="death" class="screen death hidden">
+    <div class="death-static" aria-hidden="true"></div>
+    <img id="jumpface" class="jumpface" alt="">
+    <div id="jumpwords" class="jumpwords">IT'S IN.</div>
+    <div id="killCard" class="kill-card hidden">
+      <div class="kicker">PARTY STATUS: RUINED</div>
+      <h2>KILLING<br>PARTY</h2>
+      <p id="deathLine">You let the anomaly in. Everyone got a jumpscare. Everyone died.</p>
+      <div class="stats" id="deathStats"></div>
+      <button id="retryBtn" class="big-btn red">TRY AGAIN?</button>
+    </div>
+  </section>
+
+  <!-- WIN -->
+  <section id="ending" class="screen hidden">
+    <div class="end-card">
+      <div class="kicker">50 / 50 HUMANS</div>
+      <h2>HOUSE<br><span>PARTY</span></h2>
+      <p>You let in exactly 50 humans and zero anomalies.<br><b>Probably.</b></p>
+      <div class="stats" id="endStats"></div>
+      <div class="end-buttons">
+        <button id="keepPartyBtn" class="big-btn">KEEP PARTYING</button>
+        <button id="againBtn" class="big-btn dark">PLAY AGAIN</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="touch" aria-hidden="true">
+    <div id="stick"><div id="knob"></div></div>
+    <div id="touchLabel">MOVE</div>
+  </div>
+</div>
+
+<script type="module" src="./js/main.js"></script>
+</body>
+</html>
