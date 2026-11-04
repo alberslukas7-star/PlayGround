@@ -16,3 +16,15 @@
 - 👤 [Explore the creator's projects](https://go.ondev.store/alberslukas7-star).
 - 🌍 [Create with OMGithub](https://go.ondev.store/).
 <!-- omgithub:readme:end -->
+
+## 🎮 Neon Surge
+
+A self-contained 2D arena survival game with no final wave. Survive escalating
+waves forever, chain kills for score multipliers, and grab **+HP** / **OVERDRIVE**
+drops. Your ship auto-fires at the nearest threat — focus on movement, positioning,
+and dashing. Losing all hull HP does not end the run: the ship reboots in place,
+clears the area, and costs 20% of the current score.
+
+- **Desktop:** WASD / arrows to move, **Space** to dash (with brief invulnerability), **P/Esc** to pause, **M** to mute, **Enter** to start/retry.
+- **Mobile:** left thumb stick to move, **DASH** button to burst; controls respect safe areas.
+- No build step, no dependencies: `index.html`, `style.css`, and `game.js` served statically.
