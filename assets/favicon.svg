@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="bg" cx="38%" cy="30%" r="75%">
+      <stop offset="0" stop-color="#233b2a"/>
+      <stop offset="1" stop-color="#07110c"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f0dfac"/>
+      <stop offset=".52" stop-color="#c9a96d"/>
+      <stop offset="1" stop-color="#86683b"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="13" fill="url(#bg)"/>
+  <path d="M32 7 55 32 32 57 9 32Z" fill="none" stroke="url(#gold)" stroke-width="2.2"/>
+  <path d="M32 14 47 32 32 50 17 32Z" fill="rgba(201,169,109,.08)" stroke="url(#gold)" stroke-width="1.2"/>
+  <g fill="url(#gold)">
+    <path d="M20 39c7-2 13-7 18-14 1.9-2.7 3.7-4.2 5.5-4.8-1.2 2.1-1.7 4.5-1.5 7.2.4 5.6-2.2 11.2-7.6 15.1 2.9-4.2 3.7-7.8 2.8-11.2-3.1 4.4-6.5 7.4-10.1 9.1 1.7-2.9 2.4-5.3 2.2-7.4-2.8 3-5.7 4.9-8.6 5.9 1.8-1.6 3.2-3.4 4.2-5.5-2.1 1.1-4.3 1.6-6.6 1.6 2.7-1.2 5.5-2.9 7.9-5.3Z" opacity=".92"/>
+    <path d="M44 25c-7 2-13 7-18 14-1.9 2.7-3.7 4.2-5.5 4.8 1.2-2.1 1.7-4.5 1.5-7.2-.4-5.6 2.2-11.2 7.6-15.1-2.9 4.2-3.7 7.8-2.8 11.2 3.1-4.4 6.5-7.4 10.1-9.1-1.7 2.9-2.4 5.3-2.2 7.4 2.8-3 5.7-4.9 8.6-5.9-1.8 1.6-3.2 3.4-4.2 5.5 2.1-1.1 4.3-1.6 6.6-1.6-2.7 1.2-5.5 2.9-7.9 5.3Z" opacity=".55"/>
+  </g>
+  <circle cx="32" cy="32" r="3.1" fill="#f7ebc7"/>
+</svg>

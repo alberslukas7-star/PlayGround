@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#08110d" />
+  <title>The Ironwood Hunt — Dual Blades</title>
+  <meta name="description" content="A cinematic dual-blades monster hunt in the Ironwood." />
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main id="game-shell">
+    <canvas id="game" aria-label="The Ironwood Hunt game canvas"></canvas>
+
+    <div class="grade" aria-hidden="true"></div>
+    <div class="vignette" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+
+    <section id="hud" aria-label="Hunt interface">
+      <div class="quest-panel panel">
+        <div class="quest-emblem" aria-hidden="true">
+          <svg viewBox="0 0 40 40"><path d="M20 2 37 20 20 38 3 20Z"/><path d="M20 9 30 20 20 31 10 20Z"/><path d="m20 14 4 6-4 6-4-6Z"/></svg>
+        </div>
+        <div class="quest-copy">
+          <span class="eyebrow">Quest · 4★</span>
+          <h2>The Ironwood Hunt</h2>
+          <p><span class="objective-mark"></span>Slay the Thornscale Tyrant</p>
+        </div>
+        <div class="quest-timer">
+          <span id="timer">12:00</span>
+          <small>remaining</small>
+        </div>
+      </div>
+
+      <div class="monster-panel">
+        <div class="monster-heading">
+          <div class="monster-glyph" aria-hidden="true">
+            <svg viewBox="0 0 64 64">
+              <path d="M8 42c5-18 16-27 24-27s19 9 24 27l-8-7-4 9-6-10-6 10-6-10-6 10-4-9-8 7Z"/>
+              <path d="M20 47c8 5 16 5 24 0" class="line"/>
+              <circle cx="25" cy="34" r="2.4" class="eye"/><circle cx="39" cy="34" r="2.4" class="eye"/>
+            </svg>
+          </div>
+          <div class="monster-title">
+            <span class="eyebrow">Large Monster</span>
+            <h3>Thornscale Tyrant</h3>
+          </div>
+          <div class="monster-stars" aria-label="Threat level 4">✦ ✦ ✦ ✦</div>
+        </div>
+        <div class="monster-bar" id="monsterBar">
+          <div class="monster-bar-lag" id="monsterBarLag"></div>
+          <div class="monster-bar-fill" id="monsterBarFill"></div>
+          <span class="bar-glint"></span>
+        </div>
+        <div class="monster-status">
+          <span id="monsterState">Prowling</span>
+          <span id="rageTag" class="tag rage">Enraged</span>
+          <span id="woundTag" class="tag wound">Wounded</span>
+        </div>
+      </div>
+
+      <aside class="minimap-wrap">
+        <div class="minimap-ring">
+          <canvas id="minimap" width="320" height="320"></canvas>
+          <span class="north">N</span>
+        </div>
+        <div class="zone-label">Ancient Forest · Zone 7</div>
+      </aside>
+
+      <div class="player-panel panel">
+        <div class="hunter-sigil" aria-hidden="true">
+          <svg viewBox="0 0 48 48">
+            <path d="M11 39 15 16 24 8l9 8 4 23-9-4h-8Z"/>
+            <path d="m16 22 4-6 4 5 4-5 4 6" class="line"/>
+            <path d="M24 9v29" class="line faint"/>
+          </svg>
+        </div>
+        <div class="vitals">
+          <div class="vital-row health-row">
+            <span class="vital-label">HEALTH</span>
+            <div class="vital-track health-track">
+              <div class="health-lag" id="healthLag"></div>
+              <div class="health-fill" id="healthFill"></div>
+              <span id="healthValue">150</span>
+            </div>
+          </div>
+          <div class="vital-row stamina-row">
+            <span class="vital-label">STAMINA</span>
+            <div class="vital-track stamina-track">
+              <div class="stamina-fill" id="staminaFill"></div>
+            </div>
+          </div>
+          <div class="sharpness-row">
+            <span class="vital-label">SHARPNESS</span>
+            <div class="sharpness" id="sharpness">
+              <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            </div>
+            <span id="sharpnessLabel">White</span>
+          </div>
+        </div>
+        <div class="demon-gauge" id="demonGauge">
+          <svg viewBox="0 0 42 42" aria-hidden="true">
+            <path d="M21 3 37 12v18L21 39 5 30V12Z"/>
+            <path d="M15 24c1-8 5-12 6-12s5 4 6 12c0 4-3 7-6 7s-6-3-6-7Z" class="line"/>
+          </svg>
+          <span>DEMON</span>
+          <b id="demonValue">0</b>
+        </div>
+      </div>
+
+      <div id="comboDisplay" class="combo-display">
+        <span id="comboCount">0</span>
+        <small>HIT CHAIN</small>
+        <em id="comboRank">Fine</em>
+      </div>
+
+      <div class="item-bar" aria-label="Item pouch">
+        <button class="item-slot potion-slot" id="potionSlot" type="button" tabindex="-1">
+          <span class="key">E</span>
+          <span class="potion-icon" aria-hidden="true">
+            <svg viewBox="0 0 32 36"><path d="M12 3h8v6l4 7v14a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2V16l4-7Z"/><path d="M9 21h14" class="line"/><path d="M13 3h6" class="line"/></svg>
+          </span>
+          <span class="item-meta"><b>Mega Potion</b><small id="potionCount">×3</small></span>
+        </button>
+        <button class="item-slot compact" id="whetstoneSlot" type="button" tabindex="-1">
+          <span class="key">R</span>
+          <span class="stone-icon" aria-hidden="true"></span>
+          <span class="item-meta"><b>Whetstone</b><small>Restore</small></span>
+        </button>
+        <button class="item-slot compact demon-slot" id="demonSlot" type="button" tabindex="-1">
+          <span class="key">Q</span>
+          <span class="demon-icon" aria-hidden="true">
+            <svg viewBox="0 0 32 36"><path d="M16 2 29 9v16L16 34 3 25V9Z"/><path d="M11 22c0-8 3-12 5-12s5 4 5 12" class="line"/></svg>
+          </span>
+          <span class="item-meta"><b>Demon Mode</b><small id="demonState">Ready</small></span>
+        </button>
+      </div>
+
+      <div class="control-ribbon" id="controlRibbon">
+        <span><kbd>WASD</kbd> Move</span>
+        <span><kbd>LMB</kbd> Slash</span>
+        <span><kbd>RMB</kbd> Blade Dance</span>
+        <span><kbd>Shift</kbd> Evade</span>
+        <span><kbd>Q</kbd> Demon</span>
+        <span><kbd>H</kbd> Guide</span>
+        <span><kbd>Esc</kbd> Pause</span>
+      </div>
+
+      <button id="soundToggle" class="icon-button" type="button" aria-label="Toggle sound">
+        <svg class="sound-on" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16 8c1.4 1 2 2.4 2 4s-.6 3-2 4M18.6 5.4C21 7 22 9.2 22 12s-1 5-3.4 6.6" class="line"/></svg>
+        <svg class="sound-off" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="m16 9 5 6m0-6-5 6" class="line"/></svg>
+      </button>
+
+      <button id="pauseButton" class="icon-button pause-toggle" type="button" aria-label="Pause hunt">
+        <svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14" class="line"/></svg>
+      </button>
+
+      <div class="hint-chip" id="hintChip">Thornscale is watching</div>
+    </section>
+
+    <div id="questBanner" class="quest-banner">
+      <div class="banner-rule"></div>
+      <span class="eyebrow">Quest Started</span>
+      <h1>The Ironwood Hunt</h1>
+      <p>Dual Blades · Slay the Thornscale Tyrant</p>
+      <div class="banner-rule"></div>
+    </div>
+
+    <div id="toasts" class="toast-stack" aria-live="polite"></div>
+
+    <section id="fieldGuide" class="modal-field" hidden>
+      <div class="field-card">
+        <button class="close-guide" id="closeGuide" type="button" aria-label="Close guide">×</button>
+        <span class="eyebrow">Hunter's Field Guide</span>
+        <h2>Become the Storm</h2>
+        <p class="guide-lede">The Thornscale Tyrant is a brute of the old forest. Stay beneath its jaws, punish every recovery, and never let your stamina break.</p>
+        <div class="guide-grid">
+          <div><span class="guide-key">WASD</span><b>Stalk</b><p>Move through the clearing. Your blades follow the mouse.</p></div>
+          <div><span class="guide-key">LMB / J</span><b>Dual Slash</b><p>Chain four strikes. The fourth cross-cut hits hardest.</p></div>
+          <div><span class="guide-key">RMB / K</span><b>Blade Dance</b><p>Spend stamina to carve a whirlwind of hits around you.</p></div>
+          <div><span class="guide-key">SHIFT / SPACE</span><b>Evade</b><p>Dash with brief invulnerability. Demon Mode makes it a shadow-step.</p></div>
+          <div><span class="guide-key">Q</span><b>Demon Mode</b><p>Drain stamina for faster strikes, sharper damage, and crimson trails.</p></div>
+          <div><span class="guide-key">E / R</span><b>Survive</b><p>Drink a Mega Potion or sharpen. Both leave you exposed.</p></div>
+        </div>
+        <div class="guide-warning"><strong>Watch the red ground.</strong> Charges, tail sweeps, and acid spit are telegraphed. Dodge through, not away.</div>
+        <button class="primary-button" id="resumeHunt" type="button">Return to the hunt</button>
+      </div>
+    </section>
+
+    <section id="endScreen" class="end-screen" hidden>
+      <div class="end-glow"></div>
+      <div class="end-card">
+        <span class="eyebrow" id="endEyebrow">Quest Complete</span>
+        <h2 id="endTitle">The Tyrant Falls</h2>
+        <p id="endLine">The Ironwood is quiet again. For now.</p>
+        <div class="end-medal" id="endMedal" aria-hidden="true">
+          <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="54"/><circle cx="60" cy="60" r="43"/><path d="M60 25 72 50l27 5-19 20 4 27-24-13-24 13 4-27-19-20 27-5Z"/></svg>
+        </div>
+        <div class="result-grid">
+          <div><span>Hunt time</span><b id="resultTime">00:00</b></div>
+          <div><span>Damage</span><b id="resultDamage">0</b></div>
+          <div><span>Best chain</span><b id="resultCombo">0</b></div>
+          <div><span>Potions used</span><b id="resultPotions">0</b></div>
+        </div>
+        <button class="primary-button" id="retryButton" type="button">Hunt again</button>
+      </div>
+    </section>
+
+    <section id="pauseScreen" class="pause-screen" hidden>
+      <div class="pause-card">
+        <span class="eyebrow">Hunt Paused</span>
+        <h2>The forest holds its breath.</h2>
+        <button class="primary-button" id="resumeButton" type="button">Resume</button>
+        <button class="ghost-button" id="guideButton" type="button">Field guide</button>
+      </div>
+    </section>
+
+    <div id="mobileControls" class="mobile-controls" aria-label="Touch controls">
+      <div id="joystick" class="joystick"><div class="joystick-knob" id="joystickKnob"></div></div>
+      <div class="touch-actions">
+        <button class="touch-button touch-small" id="touchSharpen" type="button"><span>Hone</span><small>R</small></button>
+        <button class="touch-button touch-small" id="touchDemon" type="button"><span>Demon</span><small>Q</small></button>
+        <button class="touch-button touch-small" id="touchPotion" type="button"><span>Potion</span><small>E</small></button>
+        <button class="touch-button touch-medium" id="touchDance" type="button"><span>Dance</span><small>RMB</small></button>
+        <button class="touch-button touch-attack" id="touchAttack" type="button"><span>Slash</span><small>LMB</small></button>
+        <button class="touch-button touch-dodge" id="touchDodge" type="button"><span>Evade</span><small>Shift</small></button>
+      </div>
+    </div>
+
+    <div id="damageFlash" class="damage-flash" aria-hidden="true"></div>
+    <div id="lowHealth" class="low-health" aria-hidden="true"></div>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>
