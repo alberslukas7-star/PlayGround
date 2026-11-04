@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#08070b">
+  <meta name="description" content="Bloodmoon: Hollowmoor — a gothic survivor game where every kill can spill a Diablo-style relic.">
+  <title>BLOODMOON — Hollowmoor</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <canvas id="game" aria-label="Bloodmoon game world"></canvas>
+
+    <!-- ── Title ─────────────────────────────────────────────────────────── -->
+    <section id="title-screen" class="screen title-screen">
+      <div class="title-topline">
+        <span class="title-mark">✦</span>
+        <span>A GOTHIC SURVIVOR</span>
+        <span class="title-mark">✦</span>
+      </div>
+
+      <div class="title-lockup">
+        <div class="sigil" aria-hidden="true">
+          <svg viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="54" fill="none" stroke="currentColor" stroke-width=".7" opacity=".6"/>
+            <circle cx="60" cy="60" r="45" fill="none" stroke="currentColor" stroke-width=".4" stroke-dasharray="2 5" opacity=".5"/>
+            <path d="M60 19c-7 15-10 28-10 41 0 15 4 27 10 41 6-14 10-26 10-41 0-13-3-26-10-41Z" fill="none" stroke="currentColor" stroke-width="1.1"/>
+            <path d="M30 75c13-4 23-9 30-18 7 9 17 14 30 18-11 5-21 7-30 7s-19-2-30-7Z" fill="none" stroke="currentColor" stroke-width=".8" opacity=".8"/>
+            <circle cx="60" cy="50" r="3.5" fill="currentColor"/>
+          </svg>
+        </div>
+        <p class="kicker">THE HOLLOWMOOR CHRONICLE</p>
+        <h1>BLOOD<span>MOON</span></h1>
+        <p class="title-sub">H O L L O W M O O R</p>
+        <p class="title-copy">The dead are waking beneath a crimson sky.<br>Take their relics. Outlive the night.</p>
+      </div>
+
+      <div class="title-actions">
+        <button id="start-btn" class="btn btn-primary btn-large">
+          <span class="btn-ornament">✦</span>
+          Begin the Hunt
+          <span class="btn-ornament">✦</span>
+        </button>
+        <button id="how-btn" class="btn btn-ghost">How to Play</button>
+      </div>
+
+      <div class="title-features">
+        <span><b>01</b> Auto-attack</span>
+        <i></i>
+        <span><b>02</b> Diablo loot</span>
+        <i></i>
+        <span><b>03</b> Survive until dawn</span>
+      </div>
+
+      <div class="title-footer">
+        <span>WASD to move</span>
+        <span>·</span>
+        <span>Space to dash</span>
+        <span>·</span>
+        <span>Q to unleash</span>
+        <span>·</span>
+        <span>I for relics</span>
+      </div>
+
+      <div class="version-chip">BUILD 1.0 · THE FIRST NIGHT</div>
+    </section>
+
+    <!-- ── HUD ───────────────────────────────────────────────────────────── -->
+    <section id="hud" class="hud is-hidden" aria-live="polite">
+      <div class="hud-top">
+        <div class="vitals hud-card">
+          <div class="portrait">
+            <svg viewBox="0 0 64 64" aria-hidden="true">
+              <path d="M13 58c1-14 9-21 19-21s18 7 19 21" fill="#211519"/>
+              <path d="M18 29c0-10 6-18 14-18s14 8 14 18c0 9-6 16-14 16s-14-7-14-16Z" fill="#c9b4a3"/>
+              <path d="M17 29C15 15 25 6 32 6c11 0 18 8 16 25-3-5-5-9-6-13-5 4-12 6-21 5Z" fill="#301a21"/>
+              <path d="M23 28h6M35 28h6" stroke="#1b0e10" stroke-width="2" stroke-linecap="round"/>
+              <path d="M29 37c2 1 4 1 6 0" stroke="#7d4d4d" stroke-width="1.5" fill="none"/>
+              <path d="M32 40v7" stroke="#8a5f57" stroke-width="1.5"/>
+            </svg>
+            <span id="player-level" class="level-badge">1</span>
+          </div>
+          <div class="vitals-main">
+            <div class="vitals-label">
+              <span>THE GRAVEBOUND</span>
+              <span id="hp-text">100 / 100</span>
+            </div>
+            <div class="bar health-bar"><div id="hp-fill" class="bar-fill"></div><div class="bar-shine"></div></div>
+            <div class="xp-row">
+              <span class="xp-label">SOULS</span>
+              <div class="bar xp-bar"><div id="xp-fill" class="bar-fill"></div></div>
+              <span id="xp-text">0 / 15</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="run-clock">
+          <div class="clock-rule"></div>
+          <span id="wave-label" class="wave-label">WAVE I</span>
+          <span id="run-timer" class="timer">00:00</span>
+          <span id="dawn-label" class="dawn-label">DAWN IN 5:00</span>
+          <div class="clock-rule"></div>
+        </div>
+
+        <div class="hud-tools">
+          <button id="inventory-btn" class="icon-btn" aria-label="Open satchel" title="Satchel (I)">
+            <svg viewBox="0 0 24 24"><path d="M5 9h14l-1.5 11h-11L5 9Z" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 9V7a4 4 0 0 1 8 0v2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M9 13h6M10 16h4" stroke="currentColor" stroke-width="1.2"/></svg>
+            <span id="bag-count" class="tool-badge">0</span>
+          </button>
+          <button id="sound-btn" class="icon-btn" aria-label="Mute sound" title="Mute (M)">
+            <svg class="sound-on" viewBox="0 0 24 24"><path d="M4 10v4h4l5 4V6l-5 4H4Z" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M16 9c2 2 2 4 0 6M18.5 6.5c4 3.5 4 7.5 0 11" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
+            <svg class="sound-off" viewBox="0 0 24 24"><path d="M4 10v4h4l5 4V6l-5 4H4Z" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="m16 10 5 4m0-4-5 4" stroke="currentColor" stroke-width="1.4"/></svg>
+          </button>
+          <button id="pause-btn" class="icon-btn" aria-label="Pause game" title="Pause (Esc)">
+            <svg viewBox="0 0 24 24"><path d="M8 6v12M16 6v12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="objective" class="objective hud-card">
+        <span class="objective-kicker">NIGHTFALL</span>
+        <strong id="objective-title">Survive until dawn</strong>
+        <span id="objective-sub">The Hollow King stirs at 4:00</span>
+        <div class="objective-track"><div id="objective-fill"></div><i id="boss-pip"></i></div>
+      </div>
+
+      <div class="run-stats">
+        <div><span>KILLS</span><strong id="kill-count">0</strong></div>
+        <div><span>GOLD</span><strong id="gold-count">0</strong></div>
+        <div><span>RELICS</span><strong id="relic-count">0</strong></div>
+      </div>
+
+      <div id="loot-feed" class="loot-feed" aria-live="polite"></div>
+
+      <div class="ability-dock">
+        <button id="dash-btn" class="ability-btn" aria-label="Dash">
+          <span class="ability-art dash-art">➤</span>
+          <span class="ability-key">SPACE</span>
+          <span class="ability-name">DASH</span>
+          <span class="ability-cool"></span>
+        </button>
+        <button id="nova-btn" class="ability-btn" aria-label="Blood Nova">
+          <span class="ability-art nova-art">
+            <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="4" fill="currentColor"/><path d="M16 2v7M16 23v7M2 16h7M23 16h7M6 6l5 5M21 21l5 5M26 6l-5 5M11 21l-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </span>
+          <span class="ability-key">Q</span>
+          <span class="ability-name">BLOOD NOVA</span>
+          <span class="ability-cool"></span>
+        </button>
+      </div>
+
+      <div class="control-hint">
+        <span><kbd>WASD</kbd> move</span>
+        <span><kbd>SPACE</kbd> dash</span>
+        <span><kbd>Q</kbd> nova</span>
+        <span><kbd>I</kbd> satchel</span>
+      </div>
+
+      <div id="boss-bar" class="boss-bar is-hidden">
+        <div class="boss-name"><span>THE HOLLOW KING</span><small>LORD OF THE GRAVE</small></div>
+        <div class="bar"><div id="boss-hp-fill" class="bar-fill"></div><div class="bar-shine"></div></div>
+      </div>
+
+      <div id="mobile-controls" class="mobile-controls">
+        <div id="joystick" class="joystick" aria-label="Movement joystick">
+          <div class="joystick-ring"></div>
+          <div id="joystick-knob" class="joystick-knob"></div>
+        </div>
+        <div class="mobile-abilities">
+          <button id="mobile-nova" class="mobile-ability" aria-label="Blood Nova">Q</button>
+          <button id="mobile-dash" class="mobile-ability" aria-label="Dash">➤</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="announcement" class="announcement" aria-live="assertive">
+      <span id="announce-kicker"></span>
+      <h2 id="announce-title"></h2>
+      <p id="announce-sub"></p>
+    </div>
+
+    <!-- ── Level up ──────────────────────────────────────────────────────── -->
+    <section id="levelup-screen" class="overlay is-hidden">
+      <div class="overlay-grain"></div>
+      <div class="levelup-wrap">
+        <div class="levelup-head">
+          <span class="kicker">BLOOD REMEMBERS</span>
+          <h2>THE NIGHT DEEPENS</h2>
+          <p>Choose a boon. <span id="levelup-level">Level 2</span></p>
+        </div>
+        <div id="boon-cards" class="boon-cards"></div>
+        <p class="levelup-hint">Press <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> to choose</p>
+      </div>
+    </section>
+
+    <!-- ── Inventory ─────────────────────────────────────────────────────── -->
+    <section id="inventory-screen" class="overlay inventory-overlay is-hidden">
+      <div class="overlay-grain"></div>
+      <div class="sheet">
+        <header class="sheet-head">
+          <div>
+            <span class="kicker">THE GRAVEBOUND</span>
+            <h2>SATCHEL &amp; RELICS</h2>
+          </div>
+          <div class="sheet-head-right">
+            <div class="gold-pill"><span>◆</span> <strong id="sheet-gold">0</strong> gold</div>
+            <button id="close-inventory" class="close-btn" aria-label="Close satchel">✕</button>
+          </div>
+        </header>
+
+        <div class="sheet-body">
+          <section class="gear-pane">
+            <div class="pane-title"><span>ARMAMENTS</span><i></i><em id="gear-power">POWER 0</em></div>
+            <div class="equipment-grid" id="equipment-grid"></div>
+            <div class="stats-pane">
+              <div class="pane-title"><span>ATTRIBUTES</span><i></i></div>
+              <div id="stats-grid" class="stats-grid"></div>
+            </div>
+          </section>
+
+          <section class="bag-pane">
+            <div class="pane-title"><span>SATCHEL</span><i></i><em id="bag-capacity">0 / 36</em></div>
+            <div id="bag-grid" class="bag-grid"></div>
+            <div class="bag-footer">
+              <button id="mend-btn" class="btn btn-small btn-ghost" type="button" title="Spend gold to restore health">Mend 35% · 30g</button>
+              <button id="salvage-commons" class="btn btn-small btn-ghost">Salvage Commons</button>
+              <button id="sort-bag" class="btn btn-small btn-ghost">Sort by Power</button>
+            </div>
+            <div class="loot-legend">
+              <span class="r-common">Common</span>
+              <span class="r-magic">Magic</span>
+              <span class="r-rare">Rare</span>
+              <span class="r-legendary">Legendary</span>
+            </div>
+          </section>
+
+          <section class="detail-pane" id="detail-pane">
+            <div class="empty-detail">
+              <div class="empty-sigil">✦</div>
+              <p>Select a relic to inspect it.</p>
+              <small>Hover to compare. Double-click to equip.</small>
+            </div>
+          </section>
+        </div>
+        <footer class="sheet-foot">
+          <span>Double-click to equip</span>
+          <span>Right-click to salvage</span>
+          <span><kbd>I</kbd> to close</span>
+        </footer>
+      </div>
+    </section>
+
+    <!-- ── Pause ─────────────────────────────────────────────────────────── -->
+    <section id="pause-screen" class="overlay is-hidden">
+      <div class="overlay-grain"></div>
+      <div class="pause-wrap">
+        <span class="kicker">THE HUNT WAITS</span>
+        <h2>PAUSED</h2>
+        <div class="pause-rule"></div>
+        <div class="pause-stats">
+          <div><span>Time survived</span><strong id="pause-time">00:00</strong></div>
+          <div><span>Relics claimed</span><strong id="pause-relics">0</strong></div>
+          <div><span>Foes felled</span><strong id="pause-kills">0</strong></div>
+        </div>
+        <div class="pause-actions">
+          <button id="resume-btn" class="btn btn-primary">Resume the Hunt</button>
+          <button id="pause-inventory-btn" class="btn btn-ghost">Open Satchel</button>
+          <button id="abandon-btn" class="btn btn-text">Abandon Run</button>
+        </div>
+        <div class="pause-controls">
+          <span><kbd>WASD</kbd> Move</span>
+          <span><kbd>SPACE</kbd> Dash</span>
+          <span><kbd>Q</kbd> Blood Nova</span>
+          <span><kbd>I</kbd> Satchel</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── How to play ───────────────────────────────────────────────────── -->
+    <section id="how-screen" class="overlay is-hidden">
+      <div class="overlay-grain"></div>
+      <div class="how-wrap">
+        <span class="kicker">THE FIRST NIGHT</span>
+        <h2>HOW TO SURVIVE</h2>
+        <div class="how-grid">
+          <article><b>01</b><h3>Move, don't aim</h3><p>Your weapon strikes on its own. Weave through the horde and let the dead come to you.</p></article>
+          <article><b>02</b><h3>Claim the dead</h3><p>Walk over fallen relics to stow them. Rarer gear falls from elites and the Hollow King.</p></article>
+          <article><b>03</b><h3>Build your legend</h3><p>Open the satchel with <kbd>I</kbd>. Compare affixes, equip upgrades, salvage the rest, and spend gold to mend wounds or reforge relics.</p></article>
+          <article><b>04</b><h3>See the dawn</h3><p>Survive five minutes. At four, the Hollow King rises. Kill him, or outlast the night.</p></article>
+        </div>
+        <div class="how-keys">
+          <span><kbd>WASD</kbd> Move</span>
+          <span><kbd>SPACE</kbd> Dash</span>
+          <span><kbd>Q</kbd> Blood Nova</span>
+          <span><kbd>I</kbd> Satchel</span>
+          <span><kbd>ESC</kbd> Pause</span>
+        </div>
+        <button id="how-close" class="btn btn-primary">I am ready</button>
+      </div>
+    </section>
+
+    <!-- ── End ───────────────────────────────────────────────────────────── -->
+    <section id="end-screen" class="overlay is-hidden">
+      <div class="overlay-grain"></div>
+      <div class="end-wrap">
+        <span id="end-kicker" class="kicker">HERE LIES THE GRAVEBOUND</span>
+        <h2 id="end-title">THE NIGHT TAKES YOU</h2>
+        <p id="end-copy">But the relics remain.</p>
+        <div class="end-stats">
+          <div><span>Time</span><strong id="end-time">00:00</strong></div>
+          <div><span>Kills</span><strong id="end-kills">0</strong></div>
+          <div><span>Relics</span><strong id="end-relics">0</strong></div>
+          <div><span>Gold</span><strong id="end-gold">0</strong></div>
+        </div>
+        <div id="end-best" class="end-best"></div>
+        <div class="end-actions">
+          <button id="restart-btn" class="btn btn-primary btn-large">Rise Again</button>
+          <button id="end-menu-btn" class="btn btn-ghost">Return to Title</button>
+        </div>
+        <p class="end-quote">“Every grave is a promise.”</p>
+      </div>
+    </section>
+
+    <div id="toast-layer" class="toast-layer"></div>
+    <div id="screen-flash" class="screen-flash"></div>
+  </div>
+
+  <script type="module" src="js/game.js"></script>
+</body>
+</html>
